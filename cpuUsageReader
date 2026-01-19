@@ -1,0 +1,41 @@
+#!/bin/bash
+
+declare prev_total prev_busy next_total next_busy 
+
+readLines(){
+        local label
+        local user nice system idle iowait iqr softiqr steal guest guest_nice 
+        while read -r label user nice system idle iowait iqr softiqr steal guest guest_nice ; do
+                #pick cpu variables
+                if [[ $label == cpu* ]] ; then
+                
+                        busy=$((user + nice  + system + iowait + iqr + softiqr + steal + guest + guest_nice))
+                        total=$((busy + idle))
+
+                        prev_busy=$next_busy
+                        prev_total=$next_total
+                        next_busy=$busy
+                        next_total=$total
+                        busy_diff=$((next_busy - prev_busy))
+                        total_diff=$((next_total - prev_total))
+
+                        #avoid devision by 0 at th start
+                        if [[ $total_diff != 0 ]] ; then
+                                cpu=$((100 * $busy_diff / $total_diff))
+                                echo "$label : $cpu %"
+                        fi
+                fi
+
+        done < /proc/stat
+
+
+}
+
+
+while true ;do
+        readLines
+        sleep 1
+        clear
+
+done
+
